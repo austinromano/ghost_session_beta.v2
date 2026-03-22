@@ -24,8 +24,9 @@ export default function Avatar({ name, src, colour, size = 'md' }: AvatarProps) 
   const bg = colour || nameToColor(name);
 
   if (src) {
-    // If src is a relative API path, prepend the server URL
-    const imgSrc = src.startsWith('/') ? `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}${src}` : src;
+    // If src is a relative API path, use it as-is (works when served from same origin)
+    // or prepend the server URL for dev mode
+    const imgSrc = src.startsWith('/') ? `${import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')}${src}` : src;
     return (
       <img
         src={imgSrc}
