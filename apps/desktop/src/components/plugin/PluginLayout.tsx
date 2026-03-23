@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '../../stores/authStore';
 import { useProjectStore } from '../../stores/projectStore';
@@ -101,23 +102,20 @@ function ProjectListSidebar({
             onClick={() => setProjectsOpen((v) => !v)}
             className="h-9 px-3 mx-2 mt-1.5 w-[calc(100%-16px)] flex items-center justify-between rounded-lg glass-subtle hover:bg-white/[0.08] transition-colors"
           >
-            <span className="flex items-center gap-1.5">
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" className={`text-ghost-text-muted transition-transform ${projectsOpen ? 'rotate-90' : ''}`}>
-                <polygon points="2,0 8,5 2,10" />
-              </svg>
+            <span className="flex items-center gap-1.5 flex-1">
               <span className="text-[13px] font-bold text-white/80 uppercase tracking-[0.08em]">
-                Projects
+                Collabs
               </span>
             </span>
-            <span
-              onClick={(e) => { e.stopPropagation(); onCreate(); }}
-              className="w-5 h-5 flex items-center justify-center rounded text-ghost-text-muted hover:text-ghost-text-primary text-sm transition-colors"
-            >
-              +
-            </span>
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" className={`text-ghost-text-muted transition-transform ${projectsOpen ? 'rotate-90' : ''}`}>
+              <polygon points="2,0 8,5 2,10" />
+            </svg>
           </button>
           {projectsOpen && (
             <div className="px-2 pb-1.5 space-y-0.5">
+              <button onClick={onCreate} className="w-full flex items-center gap-2 px-2 py-1.5 text-[13px] text-purple-400 hover:text-purple-300 hover:bg-white/[0.04] rounded-md transition-colors">
+                <span className="text-[15px]">+</span> New Collabs
+              </button>
               {projects.map((p) => (
                 <div
                   key={p.id}
@@ -136,10 +134,10 @@ function ProjectListSidebar({
                   </span>
                   <button
                     onClick={(e) => { e.stopPropagation(); toggleFavorite(p.id); }}
-                    className={`shrink-0 ml-1 transition-colors ${favoriteIds.has(p.id) ? 'text-yellow-400' : 'text-ghost-text-muted/40 hover:text-yellow-400'}`}
+                    className="text-yellow-400 transition-colors hover:text-yellow-300 shrink-0 ml-2"
                     title={favoriteIds.has(p.id) ? 'Remove from favorites' : 'Add to favorites'}
                   >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill={favoriteIds.has(p.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill={favoriteIds.has(p.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.5">
                       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                     </svg>
                   </button>
@@ -154,41 +152,47 @@ function ProjectListSidebar({
           <div className="h-9 px-3 mx-2 mt-1.5 w-[calc(100%-16px)] flex items-center justify-between rounded-lg glass-subtle hover:bg-white/[0.08] transition-colors">
             <button
               onClick={() => setBeatsOpen((v) => !v)}
-              className="flex items-center gap-1.5 flex-1"
+              className="flex items-center justify-between flex-1"
             >
+              <span className="text-[13px] font-bold text-white/80 uppercase tracking-[0.08em]">
+                Projects
+              </span>
               <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" className={`text-ghost-text-muted transition-transform ${beatsOpen ? 'rotate-90' : ''}`}>
                 <polygon points="2,0 8,5 2,10" />
               </svg>
-              <span className="text-[13px] font-bold text-white/80 uppercase tracking-[0.08em]">
-                My Beats
-              </span>
-            </button>
-            <button
-              onClick={onCreateBeat}
-              className="w-5 h-5 flex items-center justify-center rounded text-ghost-text-muted hover:text-ghost-text-primary text-sm transition-colors"
-            >
-              +
             </button>
           </div>
           {beatsOpen && (
             <div className="px-2 pb-1.5 space-y-0.5">
+              <button onClick={onCreateBeat} className="w-full flex items-center gap-2 px-2 py-1.5 text-[13px] text-purple-400 hover:text-purple-300 hover:bg-white/[0.04] rounded-md transition-colors">
+                <span className="text-[15px]">+</span> New Projects
+              </button>
               {allProjects.filter((p: any) => p.projectType === 'beat').map((p: any) => (
-                <button
+                <div
                   key={p.id}
                   onClick={() => { onSelect(p.id); }}
-                  className={`w-full text-left px-2 py-1.5 text-[13px] rounded-md transition-colors ${
+                  className={`flex items-center w-full px-2 py-1.5 text-[13px] rounded-md transition-colors cursor-pointer ${
                     selectedId === p.id && !selectedPackId
                       ? 'bg-white/[0.08] text-white font-medium'
                       : 'text-ghost-text-muted font-normal hover:bg-white/[0.04] hover:text-ghost-text-secondary'
                   }`}
                 >
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center gap-2 flex-1 min-w-0">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ghost-green shrink-0">
                       <polygon points="5 3 19 12 5 21 5 3" />
                     </svg>
-                    {p.name}
+                    <span className="truncate">{p.name}</span>
                   </span>
-                </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleFavorite(p.id); }}
+                    className="text-yellow-400 transition-colors hover:text-yellow-300 shrink-0 ml-2"
+                    title={favoriteIds.has(p.id) ? 'Remove from favorites' : 'Add to favorites'}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill={favoriteIds.has(p.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.5">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                  </button>
+                </div>
               ))}
               {allProjects.filter((p: any) => p.projectType === 'beat').length === 0 && (
                 <p className="px-2 py-1.5 text-[13px] text-ghost-text-muted italic">No beats yet</p>
@@ -203,18 +207,18 @@ function ProjectListSidebar({
             onClick={() => setFavoritesOpen((v) => !v)}
             className="h-9 px-3 mx-2 mt-1.5 w-[calc(100%-16px)] flex items-center justify-between rounded-lg glass-subtle hover:bg-white/[0.08] transition-colors"
           >
-            <span className="flex items-center gap-1.5">
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" className={`text-ghost-text-muted transition-transform ${favoritesOpen ? 'rotate-90' : ''}`}>
-                <polygon points="2,0 8,5 2,10" />
-              </svg>
+            <span className="flex items-center gap-1.5 flex-1">
               <span className="text-[13px] font-bold text-white/80 uppercase tracking-[0.08em]">
                 Favorites
               </span>
             </span>
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" className={`text-ghost-text-muted transition-transform ${favoritesOpen ? 'rotate-90' : ''}`}>
+              <polygon points="2,0 8,5 2,10" />
+            </svg>
           </button>
           {favoritesOpen && (
             <div className="px-2 pb-1.5 space-y-0.5">
-              {projects.filter((p) => favoriteIds.has(p.id)).map((p) => (
+              {allProjects.filter((p: any) => favoriteIds.has(p.id)).map((p: any) => (
                 <button
                   key={p.id}
                   onClick={() => onSelect(p.id)}
@@ -225,8 +229,8 @@ function ProjectListSidebar({
                   }`}
                 >
                   <span className="flex items-center gap-2">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ghost-text-muted shrink-0">
-                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ghost-green shrink-0">
+                      <polygon points="5 3 19 12 5 21 5 3" />
                     </svg>
                     {p.name}
                   </span>
@@ -265,23 +269,18 @@ function ProjectListSidebar({
             onClick={() => setPacksOpen((v) => !v)}
             className="h-9 px-3 mx-2 mt-1.5 w-[calc(100%-16px)] flex items-center justify-between rounded-lg glass-subtle hover:bg-white/[0.08] transition-colors"
           >
-            <span className="flex items-center gap-1.5">
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" className={`text-ghost-text-muted transition-transform ${packsOpen ? 'rotate-90' : ''}`}>
-                <polygon points="2,0 8,5 2,10" />
-              </svg>
-              <span className="text-[13px] font-bold text-white/80 uppercase tracking-[0.08em]">
-                Sample Packs
-              </span>
+            <span className="text-[13px] font-bold text-white/80 uppercase tracking-[0.08em]">
+              My Samples
             </span>
-            <span
-              onClick={(e) => { e.stopPropagation(); onCreatePack(); }}
-              className="w-5 h-5 flex items-center justify-center rounded text-ghost-text-muted hover:text-ghost-text-primary text-sm transition-colors"
-            >
-              +
-            </span>
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" className={`text-ghost-text-muted transition-transform ${packsOpen ? 'rotate-90' : ''}`}>
+              <polygon points="2,0 8,5 2,10" />
+            </svg>
           </button>
           {packsOpen && (
             <div className="px-2 pb-1.5 space-y-0.5">
+              <button onClick={onCreatePack} className="w-full flex items-center gap-2 px-2 py-1.5 text-[13px] text-purple-400 hover:text-purple-300 hover:bg-white/[0.04] rounded-md transition-colors">
+                <span className="text-[15px]">+</span> New Samples
+              </button>
               {samplePacks.length === 0 && (
                 <p className="text-[11px] text-ghost-text-muted italic px-2 py-1">No packs yet</p>
               )}
@@ -305,10 +304,10 @@ function ProjectListSidebar({
                   </span>
                   <button
                     onClick={(e) => { e.stopPropagation(); toggleFavorite(sp.id); }}
-                    className={`shrink-0 ml-1 transition-colors ${favoriteIds.has(sp.id) ? 'text-yellow-400' : 'text-ghost-text-muted/40 hover:text-yellow-400'}`}
+                    className="text-yellow-400 transition-colors hover:text-yellow-300 shrink-0 ml-2"
                     title={favoriteIds.has(sp.id) ? 'Remove from favorites' : 'Add to favorites'}
                   >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill={favoriteIds.has(sp.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill={favoriteIds.has(sp.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.5">
                       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                     </svg>
                   </button>
@@ -319,8 +318,6 @@ function ProjectListSidebar({
         </div>
 
         {/* Friends */}
-        <FriendsPanel friends={friends} />
-
       </div>
     </div>
   );
@@ -345,23 +342,21 @@ function FriendsPanel({ friends }: { friends: { id: string; displayName: string;
         onClick={() => setOpen((v) => !v)}
         className="h-9 px-3 mx-2 mt-1.5 w-[calc(100%-16px)] flex items-center justify-between rounded-lg glass-subtle hover:bg-white/[0.08] transition-colors"
       >
-        <span className="flex items-center gap-1.5">
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" className={`text-ghost-text-muted transition-transform ${open ? 'rotate-90' : ''}`}>
-            <polygon points="2,0 8,5 2,10" />
-          </svg>
+        <span className="flex items-center gap-1.5 flex-1">
           <span className="text-[13px] font-bold text-white/80 uppercase tracking-[0.08em]">
-            Friends — {friends.length}
+            My Friends
           </span>
           {onlineFriends.length > 0 && (
             <span className="text-[10px] font-bold text-ghost-green bg-ghost-green/15 px-1.5 py-0.5 rounded-full">{onlineFriends.length} online</span>
           )}
         </span>
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" className={`text-ghost-text-muted transition-transform ${open ? 'rotate-90' : ''}`}>
+          <polygon points="2,0 8,5 2,10" />
+        </svg>
       </button>
       {open && (
         <div className="px-2 pb-1.5 space-y-px">
-          {friends.length === 0 ? (
-            <p className="text-[12px] text-ghost-text-muted px-2 py-3 text-center italic">No friends yet</p>
-          ) : (
+          {friends.length === 0 ? null : (
             <>
               {onlineFriends.map((f) => (
                 <div key={f.id} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-ghost-surface-hover cursor-pointer group transition-colors">
@@ -961,18 +956,18 @@ function FullMixDropZone({ projectId, onFilesAdded, isBeat }: { projectId: strin
             <span className="text-[13px] text-ghost-green">{status}</span>
           ) : (
             <>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={dragOver ? '#00FFC8' : 'rgba(255,255,255,0.25)'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dragOver ? '#00FFC8' : 'rgba(192,132,252,0.8)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="17 8 12 3 7 8" />
                 <line x1="12" y1="3" x2="12" y2="15" />
               </svg>
-              <span className={`text-[13px] ${dragOver ? 'text-ghost-green font-medium' : 'text-white/30'}`}>{isBeat ? 'Drop your beat here' : 'Drag & drop files here'}</span>
+              <span className={`text-[14px] font-semibold ${dragOver ? 'text-ghost-green' : 'text-purple-300'}`}>Drag audio files here</span>
               <div className="flex-1" />
               <button
                 onClick={handleBrowse}
-                className="flex items-center justify-center gap-1.5 w-[110px] py-1.5 text-[13px] font-semibold bg-purple-500/15 border border-purple-500/25 rounded-lg text-purple-300 hover:bg-purple-500/25 hover:border-purple-500/35 hover:text-purple-200 transition-all shrink-0"
+                className="flex items-center justify-center gap-1.5 w-[110px] h-9 text-[14px] font-semibold bg-purple-500/15 border border-purple-500/25 rounded-lg text-purple-300 hover:bg-purple-500/25 hover:border-purple-500/35 hover:text-purple-200 transition-all shrink-0"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="17 8 12 3 7 8" />
                   <line x1="12" y1="3" x2="12" y2="15" />
@@ -1627,7 +1622,7 @@ function SamplePackContentView({
                     <polyline points="17 8 12 3 7 8" />
                     <line x1="12" y1="3" x2="12" y2="15" />
                   </svg>
-                  <span className={`text-[13px] font-medium ${packDragOver ? 'text-ghost-green' : 'text-ghost-text-muted'}`}>Drop your samples here</span>
+                  <span className={`text-[14px] font-semibold ${packDragOver ? 'text-ghost-green' : 'text-purple-300'}`}>Drag audio files here</span>
                   <div className="flex-1" />
                   <button
                     onClick={handlePackBrowse}
@@ -1752,9 +1747,9 @@ function DropZone({ projectId, onFilesAdded }: { projectId: string; onFilesAdded
               <div className="flex-1" />
               <button
                 onClick={handleBrowse}
-                className="flex items-center justify-center gap-1.5 w-[110px] py-1.5 text-[13px] font-semibold bg-purple-500/15 border border-purple-500/25 rounded-lg text-purple-300 hover:bg-purple-500/25 hover:border-purple-500/35 hover:text-purple-200 transition-all shrink-0"
+                className="flex items-center justify-center gap-1.5 w-[110px] h-9 text-[14px] font-semibold bg-purple-500/15 border border-purple-500/25 rounded-lg text-purple-300 hover:bg-purple-500/25 hover:border-purple-500/35 hover:text-purple-200 transition-all shrink-0"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="17 8 12 3 7 8" />
                   <line x1="12" y1="3" x2="12" y2="15" />
@@ -2265,7 +2260,10 @@ export default function PluginLayout() {
   // Close project menu on click outside
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (projectMenuRef.current && !projectMenuRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (projectMenuRef.current && !projectMenuRef.current.contains(target)) {
+        const portalMenu = document.querySelector('[data-project-menu-portal]');
+        if (portalMenu && portalMenu.contains(target)) return;
         setShowProjectMenu(false);
       }
     };
@@ -2412,7 +2410,7 @@ export default function PluginLayout() {
   const members = currentProject?.members || [];
 
   return (
-    <div className="flex h-screen w-screen overflow-auto relative p-2 gap-2 items-start">
+    <div className="flex h-screen w-screen overflow-hidden relative p-2 gap-2">
       {/* Left sidebar */}
       <div className="w-[210px] shrink-0 glass glass-glow flex flex-col">
         <div className="flex-1 min-h-0 flex flex-col">
@@ -2435,8 +2433,8 @@ export default function PluginLayout() {
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header bar */}
-        <div className="flex items-center shrink-0 relative h-14 gap-2 pr-0" style={{ paddingRight: chatCollapsed ? '0' : '260px' }}>
-          <div className="flex-1 flex items-center px-4 gap-3 glass glass-glow rounded-2xl h-11">
+        <div className="flex items-center shrink-0 relative h-14 gap-2">
+          <div className="flex-1 flex items-center px-4 gap-3 glass glass-glow rounded-2xl h-11 min-w-0">
             {/* Social button */}
             <button
               onClick={() => {
@@ -2524,6 +2522,21 @@ export default function PluginLayout() {
                 </button>
               )}
             </div>
+          </div>
+          {/* Icons box in header */}
+          <div className="w-[248px] flex items-center justify-evenly shrink-0 glass glass-glow rounded-2xl h-11">
+            <button onClick={() => { setShowFriendSearch(!showFriendSearch); setFriendSearchQuery(''); }} className="text-white/40 hover:text-ghost-green transition-colors" title="Add Friend">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" /></svg>
+            </button>
+            <button onClick={() => { setShowNotifs(!showNotifs); setShowSettings(false); if (!showNotifs && chatNotifications.length > 0) { api.markNotificationsRead().then(() => setChatNotifications([])).catch(() => {}); } }} className="text-white/40 hover:text-ghost-green transition-colors">
+              <BellIcon count={invitations.length + chatNotifications.length} />
+            </button>
+            <button className="text-white/40 hover:text-ghost-green transition-colors" title="Inbox">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12" /><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></svg>
+            </button>
+            <button onClick={() => { setShowSettings(!showSettings); setShowNotifs(false); }} className="shrink-0 rounded-full hover:ring-2 hover:ring-ghost-green/50 transition-all">
+              <Avatar name={user?.displayName || '?'} src={user?.avatarUrl} size="sm" />
+            </button>
           </div>
 
         </div>
@@ -2623,19 +2636,18 @@ export default function PluginLayout() {
                     </div>
                     {currentProject.updatedAt && (
                       <>
-                        <div className="w-px h-4 bg-ghost-border shrink-0" />
-                        <span className="text-[11px] text-ghost-text-muted flex items-center gap-1.5 shrink-0 whitespace-nowrap">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-60"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                          <span className="text-ghost-green font-medium">{new Date(currentProject.updatedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                        <div className="w-px h-5 bg-white/10 shrink-0" />
+                        <span className="text-[13px] text-ghost-green font-medium shrink-0 whitespace-nowrap">
+                          {new Date(currentProject.updatedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                       </>
                     )}
-                    <div className="relative" ref={projectMenuRef}>
-                      <button onClick={() => setShowProjectMenu(!showProjectMenu)} className="w-6 h-6 flex items-center justify-center rounded text-ghost-text-muted hover:text-white hover:bg-ghost-surface-hover transition-colors">
+                    <div className="relative z-20" ref={projectMenuRef}>
+                      <button onClick={(e) => { e.stopPropagation(); setShowProjectMenu(!showProjectMenu); }} className="w-8 h-8 flex items-center justify-center rounded-md text-ghost-text-muted hover:text-white hover:bg-white/[0.1] transition-colors cursor-pointer">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="12" cy="19" r="2" /></svg>
                       </button>
-                      {showProjectMenu && createPortal(
-                        <div data-project-menu-portal className="fixed w-40 glass rounded-lg shadow-popup animate-popup border border-white/10 py-1" style={{ zIndex: 9999, top: projectMenuRef.current?.getBoundingClientRect().bottom! + 4, left: projectMenuRef.current?.getBoundingClientRect().right! - 160 }}>
+                      {showProjectMenu && projectMenuRef.current && createPortal(
+                        <div data-project-menu-portal className="fixed w-40 glass rounded-lg shadow-popup animate-popup border border-white/10 py-1" style={{ zIndex: 9999, top: (projectMenuRef.current.getBoundingClientRect().bottom || 0) + 4, left: (projectMenuRef.current.getBoundingClientRect().right || 0) - 160 }}>
                           <button onClick={handleShareProject} className="w-full px-3 py-1.5 text-[13px] text-left text-ghost-text-secondary hover:bg-white/[0.06] hover:text-white transition-colors flex items-center gap-2">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" /><polyline points="16 6 12 2 8 6" /><line x1="12" y1="2" x2="12" y2="15" /></svg>
                             Share to Feed
@@ -2706,9 +2718,9 @@ export default function PluginLayout() {
 
                   <button
                     onClick={() => setShowInvite(!showInvite)}
-                    className="flex items-center justify-center gap-1.5 w-[110px] py-1.5 text-[13px] font-semibold bg-purple-500/15 border border-purple-500/25 rounded-lg text-purple-300 hover:bg-purple-500/25 hover:border-purple-500/35 hover:text-purple-200 transition-all shrink-0"
+                    className="flex items-center justify-center gap-1.5 w-[110px] h-9 text-[14px] font-semibold bg-purple-500/15 border border-purple-500/25 rounded-lg text-purple-300 hover:bg-purple-500/25 hover:border-purple-500/35 hover:text-purple-200 transition-all shrink-0"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                       <circle cx="8.5" cy="7" r="4" />
                       <line x1="20" y1="8" x2="20" y2="14" />
@@ -2793,24 +2805,8 @@ export default function PluginLayout() {
 
               </div>
 
-              {/* Right panel: icons + chat */}
-              <div className="relative flex flex-col shrink-0 min-h-0 gap-2 -mt-[52px]">
-                {/* Icons box */}
-                <div className="w-[248px] flex items-center justify-evenly shrink-0 glass glass-glow rounded-2xl h-11">
-                  <button onClick={() => { setShowFriendSearch(!showFriendSearch); setFriendSearchQuery(''); }} className="text-white/40 hover:text-ghost-green transition-colors" title="Add Friend">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" /></svg>
-                  </button>
-                  <button onClick={() => { setShowNotifs(!showNotifs); setShowSettings(false); if (!showNotifs && chatNotifications.length > 0) { api.markNotificationsRead().then(() => setChatNotifications([])).catch(() => {}); } }} className="text-white/40 hover:text-ghost-green transition-colors">
-                    <BellIcon count={invitations.length + chatNotifications.length} />
-                  </button>
-                  <button className="text-white/40 hover:text-ghost-green transition-colors" title="Inbox">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12" /><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></svg>
-                  </button>
-                  <button onClick={() => { setShowSettings(!showSettings); setShowNotifs(false); }} className="shrink-0 rounded-full hover:ring-2 hover:ring-ghost-green/50 transition-all">
-                    <Avatar name={user?.displayName || '?'} src={user?.avatarUrl} size="sm" />
-                  </button>
-                </div>
-                {/* Chat box */}
+              {/* Right panel: chat */}
+              <div className="relative flex flex-col shrink-0 gap-2">
                 <button
                   onClick={() => setChatCollapsed(!chatCollapsed)}
                   className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 w-5 h-10 flex items-center justify-center rounded-full glass hover:bg-white/[0.08] transition-colors"
@@ -2822,6 +2818,28 @@ export default function PluginLayout() {
                 </button>
                 {!chatCollapsed && (
                   <div className="w-[248px] flex flex-col min-h-0 flex-1 overflow-hidden glass glass-glow rounded-2xl">
+                    <div className="px-3 py-3 border-b border-white/[0.06] shrink-0">
+                      {(() => {
+                        const displayFriends = friends.length > 0 ? friends : [
+                          { id: 'demo1', displayName: 'Alex Beats', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex&backgroundColor=b6e3f4' },
+                          { id: 'demo2', displayName: 'Jay Producer', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jay&backgroundColor=c0aede' },
+                          { id: 'demo3', displayName: 'Kira Wave', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Kira&backgroundColor=ffd5dc' },
+                          { id: 'demo4', displayName: 'Rio Sound', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Rio&backgroundColor=d1f4d1' },
+                        ];
+                        return (
+                          <div className="flex items-center justify-evenly w-full">
+                            {displayFriends.map((f) => (
+                              <div key={f.id} className="relative group cursor-pointer hover:scale-110 transition-transform" title={f.displayName}>
+                                <div className="w-10 h-10 rounded-full ring-2 ring-white/[0.08] group-hover:ring-ghost-green/40 transition-all overflow-hidden">
+                                  <Avatar name={f.displayName} src={f.avatarUrl} size="md" />
+                                </div>
+                                <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-ghost-online-green border-2 border-[#0A0412]" />
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
                     <ChatPanel />
                   </div>
                 )}
@@ -2838,24 +2856,8 @@ export default function PluginLayout() {
                 members={members}
                 onInvite={() => setShowInvite(true)}
               />
-              {/* Right panel: icons + chat */}
-              <div className="relative flex flex-col shrink-0 min-h-0 gap-2 -mt-[52px]">
-                {/* Icons box */}
-                <div className="w-[248px] flex items-center justify-evenly shrink-0 glass glass-glow rounded-2xl h-11">
-                  <button onClick={() => { setShowFriendSearch(!showFriendSearch); setFriendSearchQuery(''); }} className="text-white/40 hover:text-ghost-green transition-colors" title="Add Friend">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" /></svg>
-                  </button>
-                  <button onClick={() => { setShowNotifs(!showNotifs); setShowSettings(false); if (!showNotifs && chatNotifications.length > 0) { api.markNotificationsRead().then(() => setChatNotifications([])).catch(() => {}); } }} className="text-white/40 hover:text-ghost-green transition-colors">
-                    <BellIcon count={invitations.length + chatNotifications.length} />
-                  </button>
-                  <button className="text-white/40 hover:text-ghost-green transition-colors" title="Inbox">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12" /><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></svg>
-                  </button>
-                  <button onClick={() => { setShowSettings(!showSettings); setShowNotifs(false); }} className="shrink-0 rounded-full hover:ring-2 hover:ring-ghost-green/50 transition-all">
-                    <Avatar name={user?.displayName || '?'} src={user?.avatarUrl} size="sm" />
-                  </button>
-                </div>
-                {/* Chat box */}
+              {/* Right panel: chat */}
+              <div className="relative flex flex-col shrink-0 gap-2">
                 <button
                   onClick={() => setChatCollapsed(!chatCollapsed)}
                   className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 w-5 h-10 flex items-center justify-center rounded-full glass hover:bg-white/[0.08] transition-colors"
@@ -2867,6 +2869,28 @@ export default function PluginLayout() {
                 </button>
                 {!chatCollapsed && (
                   <div className="w-[248px] flex flex-col min-h-0 flex-1 overflow-hidden glass glass-glow rounded-2xl">
+                    <div className="px-3 py-3 border-b border-white/[0.06] shrink-0">
+                      {(() => {
+                        const displayFriends = friends.length > 0 ? friends : [
+                          { id: 'demo1', displayName: 'Alex Beats', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex&backgroundColor=b6e3f4' },
+                          { id: 'demo2', displayName: 'Jay Producer', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jay&backgroundColor=c0aede' },
+                          { id: 'demo3', displayName: 'Kira Wave', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Kira&backgroundColor=ffd5dc' },
+                          { id: 'demo4', displayName: 'Rio Sound', avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Rio&backgroundColor=d1f4d1' },
+                        ];
+                        return (
+                          <div className="flex items-center justify-evenly w-full">
+                            {displayFriends.map((f) => (
+                              <div key={f.id} className="relative group cursor-pointer hover:scale-110 transition-transform" title={f.displayName}>
+                                <div className="w-10 h-10 rounded-full ring-2 ring-white/[0.08] group-hover:ring-ghost-green/40 transition-all overflow-hidden">
+                                  <Avatar name={f.displayName} src={f.avatarUrl} size="md" />
+                                </div>
+                                <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-ghost-online-green border-2 border-[#0A0412]" />
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
                     <ChatPanel />
                   </div>
                 )}
