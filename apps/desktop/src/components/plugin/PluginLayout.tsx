@@ -1505,7 +1505,7 @@ function StemRow({
     >
       {/* Waveform full width with overlay controls */}
       <div className="flex-1 h-full overflow-hidden bg-[#0A0412] relative">
-        <Waveform seed={name + type} height={compact ? 48 : 95} fileId={fileId} projectId={projectId} showPlayhead trackId={trackId} />
+        <Waveform seed={name + type} height={compact ? 48 : 95} fileId={fileId} projectId={projectId} trackId={trackId} />
         {/* Left gradient for text readability */}
         <div className="absolute inset-y-0 left-0 w-[45%] pointer-events-none" style={{ background: 'linear-gradient(90deg, rgba(10,4,18,0.85) 0%, rgba(10,4,18,0.4) 60%, transparent 100%)' }} />
         {/* Play + Mute buttons overlay */}
@@ -1594,6 +1594,30 @@ function StemRow({
         )}
         {/* Action buttons overlay */}
         <div className="absolute top-1/2 -translate-y-1/2 z-10 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity" style={{ right: '20px' }}>
+          {widthPercent !== undefined && widthPercent < 100 && (
+            <motion.button
+              onClick={() => {
+                useAudioStore.getState().loopTrackToFill(trackId, fileId || undefined);
+                const track = useAudioStore.getState().loadedTracks.get(trackId);
+                if (track && fileId) {
+                  audioBufferCache.set(fileId, track.buffer);
+                  rawDataCache.delete(fileId);
+                }
+              }}
+              title="Loop to fill"
+              className="w-11 h-11 rounded-full text-white flex items-center justify-center transition-all shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.15)] hover:shadow-[0_0_20px_rgba(34,197,94,0.4),0_2px_8px_rgba(0,0,0,0.3)]"
+              style={{ background: 'linear-gradient(180deg, #059669 0%, #065F46 100%)' }}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="17 1 21 5 17 9" />
+                <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                <polyline points="7 23 3 19 7 15" />
+                <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+              </svg>
+            </motion.button>
+          )}
           <motion.button
             onClick={onDelete}
             title="Delete"
@@ -1665,7 +1689,8 @@ function detectBpmFromName(name: string): number {
 }
 
 function TransportBar({ tracks, projectId, projectTempo, onTempoChange, trackZoom, onZoomChange }: { tracks?: any[]; projectId?: string; projectTempo?: number; onTempoChange?: (bpm: number) => void; trackZoom?: 'full' | 'half'; onZoomChange?: (zoom: 'full' | 'half') => void }) {
-  const { isPlaying, currentTime, duration, loadedTracks, projectBpm, play, pause, stop, seekTo, loadTrack, loadTrackFromBuffer, setProjectBpm } = useAudioStore();
+  const { isPlaying, currentTime, duration, loadedTracks, projectBpm, canUndo, canRedo, play, pause, stop, seekTo, loadTrack, loadTrackFromBuffer, setProjectBpm } = useAudioStore();
+  const currentProject = useProjectStore((s) => s.currentProject);
   const [loop, setLoop] = useState(false);
   const [metronome, setMetronome] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -1729,8 +1754,32 @@ function TransportBar({ tracks, projectId, projectTempo, onTempoChange, trackZoo
 
   return (
     <div className="shrink-0 h-11 flex items-center justify-between px-3 glass-subtle rounded-lg" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-      {/* Left: time */}
-      <span className="text-[11px] font-mono text-white/50 w-16 shrink-0">{formatTime(currentTime)}</span>
+      {/* Left: undo/redo + time */}
+      <div className="flex items-center gap-1 w-24 shrink-0">
+        <button onClick={() => {
+          const state = useAudioStore.getState();
+          if (!state.canUndo) return;
+          state.undo();
+          state.loadedTracks.forEach((t, id) => {
+            const fileId = currentProject?.tracks?.find((tr: any) => tr.id === id)?.fileId;
+            if (fileId) { audioBufferCache.set(fileId, t.buffer); rawDataCache.delete(fileId); }
+          });
+        }} className={`w-7 h-7 flex items-center justify-center rounded-md transition-colors ${canUndo ? 'text-white/60 hover:text-white hover:bg-white/[0.06]' : 'text-white/15 cursor-not-allowed'}`} title="Undo">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" /></svg>
+        </button>
+        <button onClick={() => {
+          const state = useAudioStore.getState();
+          if (!state.canRedo) return;
+          state.redo();
+          state.loadedTracks.forEach((t, id) => {
+            const fileId = currentProject?.tracks?.find((tr: any) => tr.id === id)?.fileId;
+            if (fileId) { audioBufferCache.set(fileId, t.buffer); rawDataCache.delete(fileId); }
+          });
+        }} className={`w-7 h-7 flex items-center justify-center rounded-md transition-colors ${canRedo ? 'text-white/60 hover:text-white hover:bg-white/[0.06]' : 'text-white/15 cursor-not-allowed'}`} title="Redo">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10" /></svg>
+        </button>
+        <span className="text-[10px] font-mono text-white/40 ml-1">{formatTime(currentTime)}</span>
+      </div>
 
       {/* Center: transport controls */}
       <div className="flex items-center gap-1">
@@ -2625,6 +2674,30 @@ function SocialFeed({ user, friends }: { user: any; friends: any[] }) {
         ))}{activities.length === 0 && <p className="text-center text-white/30 py-12 italic">No recent activity</p>}</div>)}
       </div>
     </div>
+  );
+}
+
+function TrackWithWidth({ track, selectedProjectId, deleteTrack, updateTrack, trackZoom, fetchProject }: { track: any; selectedProjectId: string; deleteTrack: any; updateTrack: any; trackZoom: 'full' | 'half'; fetchProject: any }) {
+  const trackBuffer = useAudioStore((s) => s.loadedTracks.get(track.id)?.buffer);
+  const maxDur = useAudioStore((s) => s.duration);
+  const bufferVersion = useAudioStore((s) => s.bufferVersion);
+  const trackDur = trackBuffer?.duration || 0;
+  const widthPct = maxDur > 0 && trackDur > 0 ? (trackDur / maxDur) * 100 : 100;
+
+  return (
+    <StemRow
+      key={`${track.id}-${bufferVersion}`}
+      trackId={track.id}
+      name={track.name || track.fileName || 'Track'}
+      type={track.type || 'audio'}
+      fileId={track.fileId}
+      projectId={selectedProjectId}
+      createdAt={track.createdAt}
+      onDelete={() => { useAudioStore.getState().removeTrack(track.id); deleteTrack(selectedProjectId, track.id); }}
+      onRename={(newName) => updateTrack(selectedProjectId, track.id, { name: newName })}
+      compact={trackZoom === 'half'}
+      widthPercent={widthPct}
+    />
   );
 }
 
@@ -3623,30 +3696,9 @@ export default function PluginLayout() {
                 <ArrangementDropZone projectId={selectedProjectId!} onFilesAdded={() => fetchProject(selectedProjectId!)}>
                   <BarRuler />
                   <div className="relative space-y-1">
-                    {(() => {
-                      const loadedTracks = useAudioStore.getState().loadedTracks;
-                      const maxDur = useAudioStore.getState().duration;
-                      return [...currentProject.tracks].reverse().map((track: any) => {
-                        const loaded = loadedTracks.get(track.id);
-                        const trackDur = loaded?.buffer?.duration || 0;
-                        const widthPct = maxDur > 0 && trackDur > 0 ? (trackDur / maxDur) * 100 : 100;
-                        return (
-                          <StemRow
-                            key={track.id}
-                            trackId={track.id}
-                            name={track.name || track.fileName || 'Track'}
-                            type={track.type || 'audio'}
-                            fileId={track.fileId}
-                            projectId={selectedProjectId!}
-                            createdAt={track.createdAt}
-                            onDelete={() => { useAudioStore.getState().removeTrack(track.id); deleteTrack(selectedProjectId!, track.id); }}
-                            onRename={(newName) => updateTrack(selectedProjectId!, track.id, { name: newName })}
-                            compact={trackZoom === 'half'}
-                            widthPercent={widthPct}
-                          />
-                        );
-                      });
-                    })()}
+                    {[...currentProject.tracks].reverse().map((track: any) => (
+                      <TrackWithWidth key={track.id} track={track} selectedProjectId={selectedProjectId!} deleteTrack={deleteTrack} updateTrack={updateTrack} trackZoom={trackZoom} fetchProject={fetchProject} />
+                    ))}
                     <BarGridOverlay />
                   </div>
                   <ArrangementPlayhead />

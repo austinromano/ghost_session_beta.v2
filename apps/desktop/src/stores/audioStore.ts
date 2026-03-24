@@ -13,11 +13,20 @@ interface LoadedTrack {
   pitch: number; // semitones offset (-12 to +12)
 }
 
+interface UndoSnapshot {
+  trackId: string;
+  buffer: AudioBuffer;
+  fileId?: string;
+}
+
 interface AudioState {
   isPlaying: boolean;
   currentTime: number;
   duration: number;
   projectBpm: number;
+  canUndo: boolean;
+  canRedo: boolean;
+  bufferVersion: number;
   loadedTracks: Map<string, LoadedTrack>;
   soloActive: boolean;
   soloPlayingTrackId: string | null;
@@ -39,6 +48,9 @@ interface AudioState {
   setTrackVolume: (trackId: string, volume: number) => void;
   setTrackMuted: (trackId: string, muted: boolean) => void;
   removeTrack: (trackId: string) => void;
+  loopTrackToFill: (trackId: string, fileId?: string) => void;
+  undo: () => void;
+  redo: () => void;
   setTrackSoloed: (trackId: string, soloed: boolean) => void;
   setTrackPitch: (trackId: string, semitones: number) => void;
   cleanup: () => void;
@@ -50,6 +62,8 @@ let startedAt = 0;
 let pausedAt = 0;
 let rafId: number | null = null;
 const bufferCache = new Map<string, AudioBuffer>();
+const undoStack: UndoSnapshot[] = [];
+const redoStack: UndoSnapshot[] = [];
 let soloSource: AudioBufferSourceNode | null = null;
 let soloGain: GainNode | null = null;
 let soloStartedAt = 0;
@@ -192,6 +206,9 @@ export const useAudioStore = create<AudioState>((set, get) => {
     currentTime: 0,
     duration: 0,
     projectBpm: 0,
+    canUndo: false,
+    canRedo: false,
+    bufferVersion: 0,
     loadedTracks: new Map(),
     soloActive: false,
     soloPlayingTrackId: null,
@@ -350,6 +367,65 @@ export const useAudioStore = create<AudioState>((set, get) => {
         }
         loadedTracks.delete(trackId);
         set({ loadedTracks: new Map(loadedTracks) });
+        recalcDuration();
+      }
+    },
+
+    loopTrackToFill: (trackId, fileId) => {
+      const { loadedTracks, duration } = get();
+      const track = loadedTracks.get(trackId);
+      if (!track || !track.buffer || track.buffer.duration >= duration) return;
+
+      // Save snapshot for undo
+      undoStack.push({ trackId, buffer: track.buffer, fileId });
+      redoStack.length = 0;
+      set({ canUndo: true, canRedo: false });
+
+      const origBuffer = track.buffer;
+      const ctx = getCtx();
+      // Cap to exactly the max duration so we don't overshoot
+      const targetLength = Math.round(duration * origBuffer.sampleRate);
+      const newBuffer = ctx.createBuffer(origBuffer.numberOfChannels, targetLength, origBuffer.sampleRate);
+
+      for (let ch = 0; ch < origBuffer.numberOfChannels; ch++) {
+        const newData = newBuffer.getChannelData(ch);
+        const origData = origBuffer.getChannelData(ch);
+        for (let i = 0; i < targetLength; i++) {
+          newData[i] = origData[i % origData.length];
+        }
+      }
+
+      track.buffer = newBuffer;
+      set({ loadedTracks: new Map(loadedTracks), bufferVersion: get().bufferVersion + 1 });
+      recalcDuration();
+    },
+
+    undo: () => {
+      if (undoStack.length === 0) return;
+      const snapshot = undoStack.pop()!;
+      const { loadedTracks } = get();
+      const track = loadedTracks.get(snapshot.trackId);
+      if (track) {
+        // Save current state for redo
+        redoStack.push({ trackId: snapshot.trackId, buffer: track.buffer, fileId: snapshot.fileId });
+        // Restore old buffer
+        track.buffer = snapshot.buffer;
+        set({ loadedTracks: new Map(loadedTracks), canUndo: undoStack.length > 0, canRedo: true, bufferVersion: get().bufferVersion + 1 });
+        recalcDuration();
+      }
+    },
+
+    redo: () => {
+      if (redoStack.length === 0) return;
+      const snapshot = redoStack.pop()!;
+      const { loadedTracks } = get();
+      const track = loadedTracks.get(snapshot.trackId);
+      if (track) {
+        // Save current state for undo
+        undoStack.push({ trackId: snapshot.trackId, buffer: track.buffer, fileId: snapshot.fileId });
+        // Restore redo buffer
+        track.buffer = snapshot.buffer;
+        set({ loadedTracks: new Map(loadedTracks), canUndo: true, canRedo: redoStack.length > 0, bufferVersion: get().bufferVersion + 1 });
         recalcDuration();
       }
     },
