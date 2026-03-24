@@ -2716,6 +2716,84 @@ function SocialFeed({ user, friends }: { user: any; friends: any[] }) {
   );
 }
 
+function BarRuler() {
+  const { duration, projectBpm, seekTo } = useAudioStore();
+  const rulerRef = useRef<HTMLDivElement>(null);
+
+  const bpm = projectBpm > 0 ? projectBpm : 120;
+  const secondsPerBar = (60 / bpm) * 4;
+  const totalBars = duration > 0 ? Math.ceil(duration / secondsPerBar) : 8;
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (!rulerRef.current || duration <= 0) return;
+    const rect = rulerRef.current.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    seekTo(pct * duration);
+  };
+
+  return (
+    <div
+      ref={rulerRef}
+      className="h-7 flex relative cursor-pointer select-none shrink-0 sticky top-0 z-30"
+      style={{ background: 'rgba(10,4,18,0.95)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+      onClick={handleClick}
+    >
+      {Array.from({ length: totalBars }).map((_, i) => {
+        const leftPct = duration > 0 ? (i * secondsPerBar / duration) * 100 : (i / totalBars) * 100;
+        return (
+          <div key={i} className="absolute top-0 bottom-0" style={{ left: `${leftPct}%` }}>
+            <div className="absolute top-0 bottom-0 w-px bg-white/[0.12]" />
+            <span className="text-[9px] font-mono text-white/35 pl-1 leading-7 select-none">{i + 1}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function BarGridOverlay() {
+  const { duration, projectBpm } = useAudioStore();
+  const bpm = projectBpm > 0 ? projectBpm : 120;
+  const secondsPerBar = (60 / bpm) * 4;
+  const totalBars = duration > 0 ? Math.ceil(duration / secondsPerBar) : 0;
+
+  if (totalBars === 0) return null;
+
+  return (
+    <div className="absolute inset-0 pointer-events-none z-10">
+      {Array.from({ length: totalBars }).map((_, i) => {
+        const leftPct = (i * secondsPerBar / duration) * 100;
+        return (
+          <div key={i} className="absolute top-0 bottom-0 w-px bg-white/[0.06]" style={{ left: `${leftPct}%` }} />
+        );
+      })}
+    </div>
+  );
+}
+
+function ArrangementPlayhead() {
+  const { currentTime, duration, isPlaying } = useAudioStore();
+  const playheadRef = useRef<HTMLDivElement>(null);
+
+  const pct = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  if (!isPlaying && currentTime === 0) return null;
+
+  return (
+    <div
+      ref={playheadRef}
+      className="absolute top-0 bottom-0 w-[2px] pointer-events-none z-20"
+      style={{
+        left: `${Math.min(pct, 100)}%`,
+        background: 'rgba(255,255,255,0.8)',
+        boxShadow: '0 0 6px rgba(255,255,255,0.4), 0 0 12px rgba(255,255,255,0.1)',
+      }}
+    >
+      <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-white" style={{ boxShadow: '0 0 4px rgba(255,255,255,0.6)' }} />
+    </div>
+  );
+}
+
 function PresenceFriendsList({ friends, onlineActivity, selectProject }: { friends: any[]; onlineActivity: Map<string, OnlineUser>; selectProject: (id: string) => void }) {
   const defaultFriends = [
     { id: 'demo1', displayName: 'Alex Beats', avatarUrl: 'https://randomuser.me/api/portraits/men/32.jpg' },
@@ -3594,21 +3672,28 @@ export default function PluginLayout() {
                     </svg>
                   </button>
                 </div>
-                <div className="space-y-2">
-                  {[...currentProject.tracks].reverse().map((track: any) => (
-                    <StemRow
-                      key={track.id}
-                      trackId={track.id}
-                      name={track.name || track.fileName || 'Track'}
-                      type={track.type || 'audio'}
-                      fileId={track.fileId}
-                      projectId={selectedProjectId!}
-                      createdAt={track.createdAt}
-                      onDelete={() => deleteTrack(selectedProjectId!, track.id)}
-                      onRename={(newName) => updateTrack(selectedProjectId!, track.id, { name: newName })}
-                      compact={trackZoom === 'half'}
-                    />
-                  ))}
+                {/* Arrangement view */}
+                <div className="relative">
+                  <BarRuler />
+                  <div className="relative space-y-1">
+                    {[...currentProject.tracks].reverse().map((track: any) => (
+                      <StemRow
+                        key={track.id}
+                        trackId={track.id}
+                        name={track.name || track.fileName || 'Track'}
+                        type={track.type || 'audio'}
+                        fileId={track.fileId}
+                        projectId={selectedProjectId!}
+                        createdAt={track.createdAt}
+                        onDelete={() => deleteTrack(selectedProjectId!, track.id)}
+                        onRename={(newName) => updateTrack(selectedProjectId!, track.id, { name: newName })}
+                        compact={trackZoom === 'half'}
+                      />
+                    ))}
+                    {/* Bar grid lines through tracks */}
+                    <BarGridOverlay />
+                  </div>
+                  <ArrangementPlayhead />
                 </div>
               </div>
               </div>
