@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Reorder } from 'framer-motion';
 import type { SamplePack } from '@ghost/types';
+import { api } from '../../lib/api';
 
 export type { SamplePack };
 
@@ -294,6 +295,56 @@ function ProjectListSidebar({
 
         {/* Friends */}
       </Reorder.Group>
+
+      {/* Storage usage */}
+      <StorageBar />
+    </div>
+  );
+}
+
+function StorageBar() {
+  const [used, setUsed] = useState(0);
+  const [limit, setLimit] = useState(2 * 1024 * 1024 * 1024);
+
+  useEffect(() => {
+    api.getStorageUsage().then((data: any) => {
+      setUsed(data.usedBytes || 0);
+      setLimit(data.limitBytes || 2 * 1024 * 1024 * 1024);
+    }).catch(() => {});
+  }, []);
+
+  const usedGB = used / (1024 * 1024 * 1024);
+  const limitGB = limit / (1024 * 1024 * 1024);
+  const pct = limit > 0 ? Math.min((used / limit) * 100, 100) : 0;
+  const isWarning = pct > 80;
+  const isCritical = pct > 95;
+
+  return (
+    <div className="shrink-0 px-3 py-3 border-t border-white/[0.06]">
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-[12px] text-white/50 font-medium">
+          {usedGB.toFixed(2)} GB of {limitGB} GB used
+        </span>
+      </div>
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{
+            width: `${pct}%`,
+            background: isCritical
+              ? 'linear-gradient(90deg, #ED4245, #FF6B6B)'
+              : isWarning
+                ? 'linear-gradient(90deg, #F0B232, #ED4245)'
+                : 'linear-gradient(90deg, #7C3AED, #00FFC8)',
+            boxShadow: isCritical
+              ? '0 0 8px rgba(237,66,69,0.4)'
+              : '0 0 8px rgba(124,58,237,0.3)',
+          }}
+        />
+      </div>
+      {pct > 80 && (
+        <p className="text-[9px] text-ghost-warning-amber mt-1">Storage almost full — upgrade for more space</p>
+      )}
     </div>
   );
 }

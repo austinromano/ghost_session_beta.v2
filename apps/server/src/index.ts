@@ -103,6 +103,18 @@ app.delete('/api/v1/admin/reset-all', authMiddleware, async (c) => {
   }
 });
 
+// Storage usage for authenticated user
+app.get('/api/v1/storage', authMiddleware, async (c) => {
+  const user = c.get('user') as any;
+  const { db: database } = await import('./db/index.js');
+  const { files } = await import('./db/schema.js');
+  const { eq, sql } = await import('drizzle-orm');
+  const [result] = await database.select({ total: sql<number>`coalesce(sum(file_size), 0)` }).from(files).where(eq(files.uploadedBy, user.id)).all();
+  const usedBytes = result?.total || 0;
+  const limitBytes = 2 * 1024 * 1024 * 1024; // 2 GB free tier
+  return c.json({ success: true, data: { usedBytes, limitBytes } });
+});
+
 // Public stats endpoint — no auth required
 app.get('/api/v1/stats', async (c) => {
   const { db: database } = await import('./db/index.js');

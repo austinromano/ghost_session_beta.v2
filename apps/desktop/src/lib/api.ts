@@ -153,4 +153,6 @@ export const api = {
     request<any>('POST', `/sample-packs/${packId}/items`, data),
   removeSamplePackItem: (packId: string, itemId: string) =>
     request<void>('DELETE', `/sample-packs/${packId}/items/${itemId}`),
+
+  getStorageUsage: () => request<{ usedBytes: number; limitBytes: number }>('GET', '/storage'),
 };
