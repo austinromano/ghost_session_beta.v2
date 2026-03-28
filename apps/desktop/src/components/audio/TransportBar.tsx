@@ -5,7 +5,18 @@ import { audioBufferCache, rawDataCache, detectBpmFromName, formatTime } from '.
 import FrequencyBar from './FrequencyBar';
 
 export default function TransportBar({ tracks, projectId, projectTempo, onTempoChange, trackZoom, onZoomChange }: { tracks?: any[]; projectId?: string; projectTempo?: number; onTempoChange?: (bpm: number) => void; trackZoom?: 'full' | 'half'; onZoomChange?: (zoom: 'full' | 'half') => void }) {
-  const { isPlaying, currentTime, duration, loadedTracks, projectBpm, canUndo, canRedo, play, pause, stop, seekTo, loadTrack, loadTrackFromBuffer, setProjectBpm } = useAudioStore();
+  const isPlaying = useAudioStore((s) => s.isPlaying);
+  const currentTime = useAudioStore((s) => s.currentTime);
+  const duration = useAudioStore((s) => s.duration);
+  const loadedTracks = useAudioStore((s) => s.loadedTracks);
+  const projectBpm = useAudioStore((s) => s.projectBpm);
+  const canUndo = useAudioStore((s) => s.canUndo);
+  const canRedo = useAudioStore((s) => s.canRedo);
+  const play = useAudioStore((s) => s.play);
+  const pause = useAudioStore((s) => s.pause);
+  const seekTo = useAudioStore((s) => s.seekTo);
+  const loadTrackFromBuffer = useAudioStore((s) => s.loadTrackFromBuffer);
+  const setProjectBpm = useAudioStore((s) => s.setProjectBpm);
   const currentProject = useProjectStore((s) => s.currentProject);
   const [loop, setLoop] = useState(false);
   const [metronome, setMetronome] = useState(false);
@@ -36,7 +47,7 @@ export default function TransportBar({ tracks, projectId, projectTempo, onTempoC
     tryLoad();
     const interval = setInterval(tryLoad, 500);
     return () => clearInterval(interval);
-  }, [tracks, projectId, loadTrack]);
+  }, [tracks, projectId, loadTrackFromBuffer]);
 
   useEffect(() => {
     loadedRef.current.clear();

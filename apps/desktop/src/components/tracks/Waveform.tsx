@@ -110,7 +110,12 @@ export default function Waveform({
     return () => obs.disconnect();
   }, [draw]);
 
-  const { currentTime, duration, isPlaying, soloPlayingTrackId, soloCurrentTime, soloDuration } = useAudioStore();
+  const currentTime = useAudioStore((s) => s.currentTime);
+  const duration = useAudioStore((s) => s.duration);
+  const isPlaying = useAudioStore((s) => s.isPlaying);
+  const soloPlayingTrackId = useAudioStore((s) => s.soloPlayingTrackId);
+  const soloCurrentTime = useAudioStore((s) => s.soloCurrentTime);
+  const soloDuration = useAudioStore((s) => s.soloDuration);
 
   let playheadPct = 0;
   let showLine = false;

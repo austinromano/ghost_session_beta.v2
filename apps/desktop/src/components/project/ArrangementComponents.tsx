@@ -62,7 +62,9 @@ export function ArrangementDropZone({ projectId, onFilesAdded, children }: { pro
 }
 
 export function BarRuler() {
-  const { duration, projectBpm, seekTo } = useAudioStore();
+  const duration = useAudioStore((s) => s.duration);
+  const projectBpm = useAudioStore((s) => s.projectBpm);
+  const seekTo = useAudioStore((s) => s.seekTo);
   const rulerRef = useRef<HTMLDivElement>(null);
   const [rulerWidth, setRulerWidth] = useState(800);
 
@@ -117,7 +119,8 @@ export function BarRuler() {
 }
 
 export function BarGridOverlay() {
-  const { duration, projectBpm } = useAudioStore();
+  const duration = useAudioStore((s) => s.duration);
+  const projectBpm = useAudioStore((s) => s.projectBpm);
   const bpm = projectBpm > 0 ? projectBpm : 120;
   const secondsPerBar = (60 / bpm) * 4;
   const totalBars = duration > 0 ? Math.max(8, Math.ceil(duration / secondsPerBar)) : 8;
@@ -137,7 +140,9 @@ export function BarGridOverlay() {
 }
 
 export function ArrangementPlayhead() {
-  const { currentTime, duration, isPlaying } = useAudioStore();
+  const currentTime = useAudioStore((s) => s.currentTime);
+  const duration = useAudioStore((s) => s.duration);
+  const isPlaying = useAudioStore((s) => s.isPlaying);
   const playheadRef = useRef<HTMLDivElement>(null);
 
   const pct = duration > 0 ? (currentTime / duration) * 100 : 0;
