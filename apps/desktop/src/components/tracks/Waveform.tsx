@@ -1,8 +1,8 @@
-import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback, memo } from 'react';
 import { useAudioStore } from '../../stores/audioStore';
 import { rawDataCache, audioBufferCache, getAudioData } from '../../lib/audio';
 
-export default function Waveform({
+export default memo(function Waveform({
   seed, height = 60, fileId, projectId, showPlayhead = false, trackId,
 }: {
   seed: string; height?: number; fileId?: string | null; projectId?: string; showPlayhead?: boolean; trackId?: string;
@@ -140,4 +140,4 @@ export default function Waveform({
       )}
     </div>
   );
-}
+});

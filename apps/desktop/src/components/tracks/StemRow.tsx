@@ -1,11 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { motion } from 'framer-motion';
 import { useAudioStore } from '../../stores/audioStore';
 import { api } from '../../lib/api';
 import { audioBufferCache, rawDataCache, formatDate } from '../../lib/audio';
 import Waveform from './Waveform';
 
-export default function StemRow({
+export default memo(function StemRow({
   name, type, onDelete, onRename, fileId, projectId, trackId, createdAt, compact, widthPercent,
 }: {
   name: string; type: string;
@@ -274,4 +274,4 @@ export default function StemRow({
     </div>
     </div>
   );
-}
+});

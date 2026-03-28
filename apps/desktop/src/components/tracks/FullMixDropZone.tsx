@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { motion } from 'framer-motion';
 import { api } from '../../lib/api';
 import Waveform from './Waveform';
 
-export default function FullMixDropZone({ projectId, onFilesAdded, isBeat, compact }: { projectId: string; onFilesAdded: () => void; isBeat?: boolean; compact?: boolean }) {
+export default memo(function FullMixDropZone({ projectId, onFilesAdded, isBeat, compact }: { projectId: string; onFilesAdded: () => void; isBeat?: boolean; compact?: boolean }) {
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState('');
@@ -110,4 +110,4 @@ export default function FullMixDropZone({ projectId, onFilesAdded, isBeat, compa
       </div>
     </div>
   );
-}
+});

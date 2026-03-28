@@ -1,7 +1,7 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, memo } from 'react';
 import { getAnalyser } from '../../stores/audioStore';
 
-export default function FrequencyBar({ seekBarRef, progress, isPlaying, onSeekClick, onSeekDrag, onSeekEnd, children }: {
+export default memo(function FrequencyBar({ seekBarRef, progress, isPlaying, onSeekClick, onSeekDrag, onSeekEnd, children }: {
   seekBarRef: React.RefObject<HTMLDivElement>;
   progress: number;
   isPlaying: boolean;
@@ -140,4 +140,4 @@ export default function FrequencyBar({ seekBarRef, progress, isPlaying, onSeekCl
       <div className="absolute inset-0 z-[4]">{children}</div>
     </div>
   );
-}
+});
