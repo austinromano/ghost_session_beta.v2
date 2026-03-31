@@ -307,7 +307,7 @@ export default function PluginLayout() {
     api.listUsers().then(setFriends).catch(() => {});
   }, []);
 
-  // Event-driven project refresh (replaces 3-second polling)
+  // Event-driven project refresh + polling fallback for WebView
   useEffect(() => {
     if (!selectedProjectId) return;
     onProjectUpdated((data) => {
@@ -316,7 +316,19 @@ export default function PluginLayout() {
         fetchVersions(selectedProjectId);
       }
     });
-    return () => onProjectUpdated(null);
+
+    // Polling fallback: refresh project data periodically in case
+    // socket.io project-updated events are missed (e.g. plugin WebView)
+    const pollTimer = setInterval(() => {
+      if (selectedProjectId) {
+        fetchProject(selectedProjectId);
+      }
+    }, 5000);
+
+    return () => {
+      onProjectUpdated(null);
+      clearInterval(pollTimer);
+    };
   }, [selectedProjectId]);
 
   useEffect(() => {

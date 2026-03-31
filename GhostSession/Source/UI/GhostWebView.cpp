@@ -19,6 +19,23 @@ bool GhostWebView::pageAboutToLoad(const juce::String& newURL)
         return false;
     }
 
+    // Block file:// URLs — dropping a file onto the WebView causes WKWebView
+    // to navigate to the file, which kills the React app.
+    if (newURL.startsWith("file://"))
+    {
+        GhostLog::write("[WebView] Blocked file:// navigation: " + newURL);
+        return false;
+    }
+
+    // Block any navigation away from the app (e.g. blob:, data:, about:blank)
+    // Allow only http/https and the initial about:blank load.
+    if (!newURL.startsWith("http://") && !newURL.startsWith("https://")
+        && !newURL.startsWith("about:"))
+    {
+        GhostLog::write("[WebView] Blocked unknown scheme: " + newURL);
+        return false;
+    }
+
     return true;
 }
 
